@@ -1,1 +1,0 @@
-# calculadora-rampa-1.0
