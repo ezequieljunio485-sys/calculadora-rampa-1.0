@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora NBR 9050 - Alta Precisão</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --primary: #8b5cf6;
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --input-bg: #2a2a2a;
+            --border: #3f3f46;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container { width: 100%; max-width: 500px; }
+
+        .card {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            margin-bottom: 20px;
+        }
+
+        h3 { margin-top: 0; font-weight: 500; font-size: 1.1rem; color: var(--text-dim); }
+
+        .radio-group { margin-bottom: 2rem; }
+        .radio-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .radio-option input { margin-right: 12px; accent-color: var(--primary); transform: scale(1.2); }
+        .radio-option span { color: var(--text-dim); font-size: 0.85rem; margin-left: 5px; }
+
+        .input-box { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 6px; font-weight: 500; }
+        .sub-label { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; display: block; }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        button {
+            padding: 14px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-clear { background: #333; color: #ccc; }
+
+        #resultArea {
+            display: none;
+            margin-top: 15px;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            word-break: break-all; /* Para não quebrar o layout com números longos */
+        }
+
+        .res-label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; opacity: 0.8; }
+        .res-value { font-size: 1.4rem; font-weight: 800; font-family: monospace; }
+
+        .info-card {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            border: 1px solid var(--border);
+        }
+        .ref-item { display: flex; align-items: center; margin-bottom: 8px; }
+        .dot { height: 8px; width: 8px; border-radius: 50%; margin-right: 10px; }
+        
+        .success-bg { background: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid #22c55e; }
+        .warning-bg { background: rgba(234, 179, 8, 0.1); color: #facc15; border: 1px solid #eab308; }
+        .danger-bg { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid #ef4444; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h3>O que você deseja calcular?</h3>
+        
+        <div class="radio-group">
+            <label class="radio-option">
+                <input type="radio" name="tipo" value="i" checked onclick="atualizarInterface()">
+                <b>Inclinação (%)</b> <span>Precisão de 9 casas</span>
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="tipo" value="h" onclick="atualizarInterface()">
+                <b>Altura (m)</b> <span>Precisão de 9 casas</span>
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="tipo" value="d" onclick="atualizarInterface()">
+                <b>Comprimento (m)</b> <span>Precisão de 9 casas</span>
+            </label>
+        </div>
+
+        <div id="campos"></div>
+
+        <div class="actions">
+            <button class="btn-main" onclick="calcular()">Calcular</button>
+            <button class="btn-clear" onclick="limpar()">Limpar</button>
+        </div>
+
+        <div id="resultArea">
+            <div class="res-label" id="resLabel">Resultado</div>
+            <div class="res-value" id="resValue">0.000000000</div>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <b style="display: block; margin-bottom: 10px;">Referência NBR 9050:</b>
+        <div class="ref-item"><span class="dot" style="background:#22c55e"></span> Até 8,333333333%: Ideal</div>
+        <div class="ref-item"><span class="dot" style="background:#eab308"></span> 8,34% a 12,5%: Reformas</div>
+        <div class="ref-item"><span class="dot" style="background:#ef4444"></span> Acima de 12,5%: Não atende</div>
+    </div>
+</div>
+
+<script>
+    function atualizarInterface() {
+        const tipo = document.querySelector('input[name="tipo"]:checked').value;
+        const camposDiv = document.getElementById('campos');
+        const resultArea = document.getElementById('resultArea');
+        resultArea.style.display = 'none';
+        
+        let html = '';
+        if (tipo === 'i') {
+            html = criaCampo("Altura (h) em metros", "Comprimento (d) em metros");
+        } else if (tipo === 'h') {
+            html = criaCampo("Inclinação (%)", "Comprimento (d) em metros");
+        } else {
+            html = criaCampo("Altura (h) em metros", "Inclinação (%)");
+        }
+        camposDiv.innerHTML = html;
+    }
+
+    function criaCampo(l1, l2) {
+        return `
+            <div class="input-box">
+                <label>${l1}</label>
+                <input type="number" id="val1" step="any" placeholder="0.000000000">
+            </div>
+            <div class="input-box">
+                <label>${l2}</label>
+                <input type="number" id="val2" step="any" placeholder="0.000000000">
+            </div>`;
+    }
+
+    function calcular() {
+        const tipo = document.querySelector('input[name="tipo"]:checked').value;
+        const v1 = parseFloat(document.getElementById('val1').value);
+        const v2 = parseFloat(document.getElementById('val2').value);
+        const resArea = document.getElementById('resultArea');
+        const resValue = document.getElementById('resValue');
+        const resLabel = document.getElementById('resLabel');
+
+        if (isNaN(v1) || isNaN(v2) || v2 === 0) {
+            alert("Insira valores válidos!");
+            return;
+        }
+
+        let resultado = 0;
+        let incParaCor = 0;
+
+        if (tipo === 'i') {
+            resultado = (v1 / v2) * 100;
+            incParaCor = resultado;
+            resLabel.innerText = "Inclinação Calculada (%)";
+        } else if (tipo === 'h') {
+            resultado = (v1 / 100) * v2;
+            incParaCor = v1;
+            resLabel.innerText = "Altura Calculada (m)";
+        } else {
+            resultado = v1 / (v2 / 100);
+            incParaCor = v2;
+            resLabel.innerText = "Comprimento Calculado (m)";
+        }
+
+        // Aplica as 9 casas decimais
+        resValue.innerText = resultado.toFixed(9);
+        resArea.style.display = "block";
+        resArea.className = "";
+
+        // Lógica de cores baseada na inclinação
+        if (incParaCor <= 8.333333334) resArea.classList.add('success-bg');
+        else if (incParaCor <= 12.5) resArea.classList.add('warning-bg');
+        else resArea.classList.add('danger-bg');
+    }
+
+    function limpar() {
+        document.getElementById('val1').value = "";
+        document.getElementById('val2').value = "";
+        document.getElementById('resultArea').style.display = "none";
+    }
+
+    atualizarInterface();
+</script>
+
+</body>
+</html>
